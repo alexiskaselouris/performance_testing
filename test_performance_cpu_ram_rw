@@ -1,0 +1,60 @@
+import time
+import psutil
+import pandas as pd
+import numpy as np
+def get_cpu_info():
+    """Get CPU utilization"""
+    return psutil.cpu_percent()
+
+
+def get_ram_usage():
+    """Get memory usage in MB"""
+    return psutil.virtual_memory().used / (1024 * 1024)
+
+
+def get_disk_io(start_time):
+    """Get disk read/write bytes since start_time"""
+    disk_io = psutil.disk_io_counters()
+    return (disk_io.read_bytes - start_disk_io.read_bytes, disk_io.write_bytes - start_disk_io.write_bytes)
+def export_to_csv_chunks(df, filename, chunksize=100000):
+    """Exports DataFrame to CSV in chunks."""
+    with open(filename, 'w') as f:
+        df.to_csv(f, header=True, index=False, chunksize=chunksize)
+
+
+with open("merge_performance.log", "w") as log_file:
+    # Start time for disk I/O measurement
+    start_time = time.time()
+    start_disk_io = psutil.disk_io_counters()
+
+    # Get initial CPU and RAM usage
+    initial_cpu_usage = get_cpu_info()
+    initial_ram_usage = get_ram_usage()
+
+    # Log messages to the file
+    log_file.write("Started the testing process\n")
+
+    # Define number of rows and columns for 1GB (approximately)
+    num_rows = int(2e8 / 8)  # Assuming 8 bytes per integer
+    num_cols = 10
+
+    # Generate random integer DataFrame
+    data = np.random.randint(1, 1000, size=(num_rows, num_cols))
+    df = pd.DataFrame(data)
+
+
+
+
+    export_to_csv_chunks(df, "large_data.csv")
+    final_cpu_usage = get_cpu_info()
+    final_ram_usage = get_ram_usage()
+    end_time = time.time()
+    read_bytes, write_bytes = get_disk_io(start_time)
+
+    # Log performance metrics
+    log_file.write("Merge Process Complete!\n")
+    log_file.write(f"CPU Usage: {initial_cpu_usage:.2f}% -> {final_cpu_usage:.2f}%\n")
+    log_file.write(f"RAM Usage: {initial_ram_usage:.2f} MB -> {final_ram_usage:.2f} MB\n")
+    log_file.write(f"Disk Read: {read_bytes / (1024 * 1024):.2f} MB\n")
+    log_file.write(f"Disk Write: {write_bytes / (1024 * 1024):.2f} MB\n")
+    log_file.write(f"Total Time: {end_time - start_time:.2f} seconds\n")
